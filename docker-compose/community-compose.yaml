@@ -1,5 +1,6 @@
 # This Docker Compose file will spin up an ACS community installation on a local host.
-# It requires at least 6GB of memory available to distribute among containers.
+# Optimized for Beelink SEi14 Mini PC (32GB DDR5, Intel Ultra 5 125H 14C/18T)
+# Total memory allocation: ~16GB (50% of available RAM for containers)
 #
 # For performance tuning, increase each container mem_limit and give a percentage of
 # it to the JVM. Use either the -Xms,-Xmx flags or the newly added flags in
@@ -10,7 +11,7 @@
 services:
   alfresco:
     image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
-    mem_limit: 1900m
+    mem_limit: 6g
     environment:
       JAVA_TOOL_OPTIONS: >-
         -Dencryption.keystore.type=JCEKS
@@ -42,8 +43,17 @@ services:
         -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
         -Ddeployment.method=DOCKER_COMPOSE
         -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+        -Dcontent.store.dir=/usr/local/tomcat/alf_data/contentstore
+        -Dfile.content.store.fileContentUrlProvider.timeBasedPath=true
+        -Dfile.content.store.fileContentUrlProvider.buckets=256
+        -Dtransform.service.enabled=true
+        -Dlegacy.transform.service.enabled=false
+        -Dthumbnail.generate=true
+        -Dthumbnail.definition.default.mimetype=image/png
+        -Dcontent.metadataExtracter.default.timeoutMs=60000
+        -Dcontent.transformer.default.timeoutMs=300000
         -XX:MinRAMPercentage=50
-        -XX:MaxRAMPercentage=80
+        -XX:MaxRAMPercentage=85
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/alfresco/api/-default-/public/alfresco/versions/1/probes/-ready-"]
       interval: 30s
@@ -51,17 +61,27 @@ services:
       retries: 5
       start_period: 1m
     volumes:
-      - /usr/local/tomcat/alf_data
+      - alf_data:/usr/local/tomcat/alf_data
+      - alf_logs:/usr/local/tomcat/logs
     extends:
       file: commons/base.yaml
       service: alfresco
   transform-core-aio:
     image: alfresco/alfresco-transform-core-aio:5.2.0
-    mem_limit: 1536m
+    mem_limit: 3g
     environment:
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
-        -XX:MaxRAMPercentage=80
+        -XX:MaxRAMPercentage=85
+      ACTIVEMQ_URL: "nio://activemq:61616"
+      TRANSFORM_ENGINE_REQUEST_TIMEOUT: "300"
+      TRANSFORM_ENGINE_LIBREOFFICE_TIMEOUT: "300"
+      TRANSFORM_ENGINE_IMAGEMAGICK_TIMEOUT: "300"
+      TRANSFORM_ENGINE_PDF_RENDERER_TIMEOUT: "300"
+      TRANSFORM_ENGINE_TIKA_TIMEOUT: "300"
+      LIBREOFFICE_MAX_TASKS_PER_PROCESS: "50"
+      IMAGEMAGICK_MAX_TRANSFORMS: "100"
+      PDF_RENDERER_MAX_TRANSFORMS: "100"
     ports:
       - "8090:8090"
     healthcheck:
@@ -75,7 +95,7 @@ services:
         condition: service_healthy
   share:
     image: docker.io/alfresco/alfresco-share:25.2.0
-    mem_limit: 1g
+    mem_limit: 2g
     environment:
       CSRF_FILTER_ORIGIN: http://localhost:8080
       CSRF_FILTER_REFERER: http://localhost:8080/share/.*
@@ -83,17 +103,26 @@ services:
       REPO_PORT: "8080"
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
-        -XX:MaxRAMPercentage=80
+        -XX:MaxRAMPercentage=85
         -Dalfresco.host=localhost
         -Dalfresco.port=8080
         -Dalfresco.context=alfresco
         -Dalfresco.protocol=http
+        -Dshare.context=share
+        -Dapplication.title="TrustBlocks Document Management"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/share"]
       interval: 20s
       timeout: 2s
       retries: 3
       start_period: 15s
+    volumes:
+      - ./branding/trustblocks-theme.css:/usr/local/tomcat/webapps/share/themes/trustblocks/yui/assets/skins/sam/trustblocks.css:ro
+      - ./branding/messages_en.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/alfresco/messages/trustblocks-messages_en.properties:ro
+      - ../TrustBlocks\ Logo\ Library/Horizontal\ Version/Color\ \(On\ Screen\)/TrustBlocks\ Horizontal\ RGB.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-horizontal-rgb.png:ro
+      - ../TrustBlocks\ Logo\ Library/Stacked\ Version/Color\ \(On\ Screen\)/TrustBlocks\ Stacked\ RGB.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-stacked-rgb.png:ro
+      - ../TrustBlocks\ Logo\ Library/Icon/Colour/TrustBlocks\ Icon\ Colour.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-icon-colour.png:ro
+      - ./branding/share-config-custom.xml:/usr/local/tomcat/shared/classes/alfresco/web-extension/share-config-custom.xml:ro
     depends_on:
       alfresco:
         condition: service_healthy
@@ -102,12 +131,14 @@ services:
       service: share
   postgres:
     image: postgres:16.5
-    mem_limit: 512m
+    mem_limit: 1g
     environment:
       - POSTGRES_PASSWORD=alfresco
       - POSTGRES_USER=alfresco
       - POSTGRES_DB=alfresco
-    command: postgres -c max_connections=300 -c log_min_messages=LOG
+    command: postgres -c max_connections=500 -c log_min_messages=LOG -c shared_buffers=256MB -c effective_cache_size=768MB -c work_mem=8MB -c maintenance_work_mem=64MB -c checkpoint_completion_target=0.9 -c wal_buffers=16MB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -118,7 +149,7 @@ services:
       start_period: 5s
   solr6:
     image: docker.io/alfresco/alfresco-search-services:2.0.16
-    mem_limit: 2g
+    mem_limit: 4g
     environment:
       # Solr needs to know how to register itself with Alfresco
       SOLR_ALFRESCO_HOST: "alfresco"
@@ -133,6 +164,17 @@ services:
       # SHARED SECRET VALUE
       JAVA_TOOL_OPTIONS: >-
         -Dalfresco.secureComms.secret=secret
+        -XX:MaxRAMPercentage=85
+        -XX:MinRAMPercentage=50
+        -Dsolr.index.tracker.enableSharding=true
+        -Dsolr.suggester.enabled=true
+        -Dsolr.content.dir=/opt/alfresco-search-services/contentstore
+        -Dsolr.model.dir=/opt/alfresco-search-services/solrhome/templates
+        -Dalfresco.index.transformContent=true
+        -Dalfresco.commitTimeUpperLimit=10000
+        -Dalfresco.lag=10000
+    volumes:
+      - solr_data:/opt/alfresco-search-services/solrhome
     ports:
       - "8083:8983" # Browser port
   activemq:
@@ -183,3 +225,13 @@ services:
     extends:
       file: commons/base.yaml
       service: proxy
+
+volumes:
+  alf_data:
+    driver: local
+  alf_logs:
+    driver: local
+  postgres_data:
+    driver: local
+  solr_data:
+    driver: local

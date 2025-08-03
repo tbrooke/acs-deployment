@@ -1,0 +1,124 @@
+/* TrustBlocks Custom Theme */
+
+/* Header branding - Use TrustBlocks horizontal logo */
+.alf-header .alfresco-logo {
+    background-image: url('/share/res/themes/trustblocks/images/trustblocks-horizontal-rgb.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 200px;
+    height: 40px;
+    text-indent: -9999px;
+}
+
+/* Login page customization */
+.theme-overlay .login .login-form h1 {
+    background-image: url('/share/res/themes/trustblocks/images/trustblocks-stacked-rgb.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    text-indent: -9999px;
+    height: 80px;
+    width: 200px;
+    margin: 0 auto 20px;
+}
+
+.theme-overlay .login .login-form .form-field .label {
+    color: #2c5aa0;
+}
+
+.theme-overlay .login .login-text {
+    text-align: center;
+    color: #2c5aa0;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.theme-overlay .login .login-text:after {
+    content: "Secure Document Management Platform";
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Main navigation styling */
+.alf-header {
+    background: linear-gradient(to bottom, #2c5aa0, #1e3f73);
+}
+
+.alf-header .alf-navigation-menu .alfresco-navigation-ToggleButton__text {
+    color: white;
+}
+
+/* Footer customization with TrustBlocks icon */
+.sticky-footer .alfresco-logo {
+    background-image: url('/share/res/themes/trustblocks/images/trustblocks-icon-colour.png');
+    background-size: 20px 20px;
+    background-repeat: no-repeat;
+    background-position: left center;
+    padding-left: 25px;
+    text-indent: 0;
+    height: auto;
+    line-height: 20px;
+}
+
+.sticky-footer .alfresco-logo:after {
+    content: "Powered by TrustBlocks";
+    color: #666;
+    font-size: 12px;
+}
+
+/* Dashboard tiles */
+.dashlet .title {
+    background: linear-gradient(to bottom, #2c5aa0, #1e3f73);
+    color: white;
+}
+
+/* Document library styling */
+.alfresco-documentlibrary-views-AlfDocumentListView .alfresco-lists-views-layouts-HeaderCell {
+    background: #2c5aa0;
+    color: white;
+}
+
+/* Button styling */
+.alfresco-buttons-AlfButton--primary {
+    background: #2c5aa0;
+    border-color: #2c5aa0;
+}
+
+.alfresco-buttons-AlfButton--primary:hover {
+    background: #1e3f73;
+    border-color: #1e3f73;
+}
+
+/* Page title customization */
+.share-header-title:after {
+    content: " - TrustBlocks Document Management";
+    color: #2c5aa0;
+}
+
+/* Site dashboard customization */
+.site-dashboard .dashlet .title-bar {
+    background: #2c5aa0;
+}
+
+/* Search results styling */
+.alfresco-search-SearchThumbnail {
+    border: 1px solid #2c5aa0;
+}
+
+/* Upload dialog branding */
+.alfresco-upload-AlfUploadDisplay .dialog-title {
+    color: #2c5aa0;
+}
+
+/* Document details page */
+.alfresco-documentlibrary-AlfDocument .alfresco-renderers-PropertyLink {
+    color: #2c5aa0;
+}
+
+/* Favicon override */
+.favicon {
+    background-image: url('/share/res/themes/trustblocks/images/trustblocks-icon-colour.png');
+}

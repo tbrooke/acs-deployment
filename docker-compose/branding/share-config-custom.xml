@@ -1,0 +1,59 @@
+<alfresco-config>
+   <!-- TrustBlocks Custom Configuration -->
+   
+   <!-- Override default Alfresco Share header -->
+   <config evaluator="string-compare" condition="WebFramework">
+      <web-framework>
+         <application-title>TrustBlocks Document Management</application-title>
+      </web-framework>
+   </config>
+
+   <!-- Site and page titles -->
+   <config evaluator="string-compare" condition="SitePages">
+      <pages>
+         <page id="site-dashboard">
+            <title>TrustBlocks Dashboard</title>
+            <title-id>page.siteDashboard.title</title-id>
+         </page>
+      </pages>
+   </config>
+
+   <!-- Login page customization -->
+   <config evaluator="string-compare" condition="LoginPage">
+      <login>
+         <title>TrustBlocks Login</title>
+         <description>Secure Document Management Platform</description>
+         <show-rememberme>true</show-rememberme>
+      </login>
+   </config>
+
+   <!-- Header customization -->
+   <config evaluator="string-compare" condition="Header">
+      <header>
+         <app-items>
+            <item type="link" id="my-files" label="My Documents" index="10">
+               <permission>Write</permission>
+               <param name="href">{userhome}</param>
+            </item>
+            <item type="link" id="shared-files" label="Shared Documents" index="20">
+               <permission>Write</permission>
+               <param name="href">/page/repository#filter=path|/Shared</param>
+            </item>
+         </app-items>
+      </header>
+   </config>
+
+   <!-- Repository URL override -->
+   <config evaluator="string-compare" condition="Remote">
+      <remote>
+         <endpoint>
+            <id>alfresco-noauth</id>
+            <name>TrustBlocks Repository</name>
+            <connector-id>alfresco-connector</connector-id>
+            <endpoint-url>http://alfresco:8080/alfresco/s</endpoint-url>
+            <identity>none</identity>
+         </endpoint>
+      </remote>
+   </config>
+
+</alfresco-config>
