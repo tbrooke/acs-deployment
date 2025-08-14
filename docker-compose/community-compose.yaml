@@ -26,7 +26,7 @@ services:
         -Ddb.driver=org.postgresql.Driver
         -Ddb.username=alfresco
         -Ddb.password=alfresco
-        -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+        -Ddb.url=jdbc:postgresql://host.docker.internal:5432/alfresco
         -Dsolr.host=solr6
         -Dsolr.port=8983
         -Dsolr.http.connection.timeout=1000
@@ -116,37 +116,37 @@ services:
       timeout: 2s
       retries: 3
       start_period: 15s
-    volumes:
-      - ./branding/trustblocks-theme.css:/usr/local/tomcat/webapps/share/themes/trustblocks/yui/assets/skins/sam/trustblocks.css:ro
-      - ./branding/messages_en.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/alfresco/messages/trustblocks-messages_en.properties:ro
-      - ../TrustBlocks\ Logo\ Library/Horizontal\ Version/Color\ \(On\ Screen\)/TrustBlocks\ Horizontal\ RGB.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-horizontal-rgb.png:ro
-      - ../TrustBlocks\ Logo\ Library/Stacked\ Version/Color\ \(On\ Screen\)/TrustBlocks\ Stacked\ RGB.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-stacked-rgb.png:ro
-      - ../TrustBlocks\ Logo\ Library/Icon/Colour/TrustBlocks\ Icon\ Colour.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-icon-colour.png:ro
-      - ./branding/share-config-custom.xml:/usr/local/tomcat/shared/classes/alfresco/web-extension/share-config-custom.xml:ro
+    # volumes:
+    #   - ./branding/trustblocks-theme.css:/usr/local/tomcat/webapps/share/themes/trustblocks/yui/assets/skins/sam/trustblocks.css:ro
+    #   - ./branding/messages_en.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/alfresco/messages/trustblocks-messages_en.properties:ro
+    #   - ./branding/images/trustblocks-horizontal-rgb.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-horizontal-rgb.png:ro
+    #   - ./branding/images/trustblocks-stacked-rgb.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-stacked-rgb.png:ro
+    #   - ./branding/images/trustblocks-icon-colour.png:/usr/local/tomcat/webapps/share/themes/trustblocks/images/trustblocks-icon-colour.png:ro
+    #   - ./branding/share-config-custom.xml:/usr/local/tomcat/shared/classes/alfresco/web-extension/share-config-custom.xml:ro
     depends_on:
       alfresco:
         condition: service_healthy
     extends:
       file: commons/base.yaml
       service: share
-  postgres:
-    image: postgres:16.5
-    mem_limit: 1g
-    environment:
-      - POSTGRES_PASSWORD=alfresco
-      - POSTGRES_USER=alfresco
-      - POSTGRES_DB=alfresco
-    command: postgres -c max_connections=500 -c log_min_messages=LOG -c shared_buffers=256MB -c effective_cache_size=768MB -c work_mem=8MB -c maintenance_work_mem=64MB -c checkpoint_completion_target=0.9 -c wal_buffers=16MB
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
+  # postgres:
+  #   image: postgres:16.5
+  #   mem_limit: 1g
+  #   environment:
+  #     - POSTGRES_PASSWORD=alfresco
+  #     - POSTGRES_USER=alfresco
+  #     - POSTGRES_DB=alfresco
+  #   command: postgres -c max_connections=500 -c log_min_messages=LOG -c shared_buffers=256MB -c effective_cache_size=768MB -c work_mem=8MB -c maintenance_work_mem=64MB -c checkpoint_completion_target=0.9 -c wal_buffers=16MB
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
+  #     start_period: 5s
   solr6:
     image: docker.io/alfresco/alfresco-search-services:2.0.16
     mem_limit: 4g
@@ -205,22 +205,22 @@ services:
     extends:
       file: commons/base.yaml
       service: content-app
-  control-center:
-    image: quay.io/alfresco/alfresco-control-center:10.0.0
-    mem_limit: 128m
-    environment:
-      APP_CONFIG_PROVIDER: "ECM"
-      APP_CONFIG_AUTH_TYPE: "BASIC"
-      BASE_PATH: ./
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      timeout: 1s
-      retries: 3
-      start_period: 1s
-    extends:
-      file: commons/base.yaml
-      service: control-center
+  # control-center:
+  #   image: quay.io/alfresco/alfresco-control-center:10.0.0
+  #   mem_limit: 128m
+  #   environment:
+  #     APP_CONFIG_PROVIDER: "ECM"
+  #     APP_CONFIG_AUTH_TYPE: "BASIC"
+  #     BASE_PATH: ./
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+  #     interval: 10s
+  #     timeout: 1s
+  #     retries: 3
+  #     start_period: 1s
+  #   extends:
+  #     file: commons/base.yaml
+  #     service: control-center
   proxy:
     extends:
       file: commons/base.yaml
@@ -231,7 +231,7 @@ volumes:
     driver: local
   alf_logs:
     driver: local
-  postgres_data:
-    driver: local
+  # postgres_data:
+  #   driver: local
   solr_data:
     driver: local
