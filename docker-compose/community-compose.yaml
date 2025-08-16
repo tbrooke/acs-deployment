@@ -11,7 +11,7 @@
 services:
   alfresco:
     image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
-    mem_limit: 6g
+    mem_limit: 3g
     environment:
       JAVA_TOOL_OPTIONS: >-
         -Dencryption.keystore.type=JCEKS
@@ -24,9 +24,9 @@ services:
         -Dmetadata-keystore.metadata.algorithm=DESede
       JAVA_OPTS: >-
         -Ddb.driver=org.postgresql.Driver
-        -Ddb.username=alfresco
-        -Ddb.password=alfresco
-        -Ddb.url=jdbc:postgresql://host.docker.internal:5432/alfresco
+        -Ddb.username=postgres
+        -Ddb.password=devpassword123
+        -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_dev
         -Dsolr.host=solr6
         -Dsolr.port=8983
         -Dsolr.http.connection.timeout=1000
@@ -43,6 +43,7 @@ services:
         -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
         -Ddeployment.method=DOCKER_COMPOSE
         -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+        -DlocalTransform.ocr.url=http://transform-ocr:8090/
         -Dcontent.store.dir=/usr/local/tomcat/alf_data/contentstore
         -Dfile.content.store.fileContentUrlProvider.timeBasedPath=true
         -Dfile.content.store.fileContentUrlProvider.buckets=256
@@ -63,6 +64,7 @@ services:
     volumes:
       - alf_data:/usr/local/tomcat/alf_data
       - alf_logs:/usr/local/tomcat/logs
+      - ../alf-tengine-ocr/docker/alfresco/modules/jars/embed-metadata-action-1.0.0.jar:/usr/local/tomcat/webapps/alfresco/WEB-INF/lib/embed-metadata-action-1.0.0.jar:ro
     extends:
       file: commons/base.yaml
       service: alfresco
@@ -95,7 +97,7 @@ services:
         condition: service_healthy
   share:
     image: docker.io/alfresco/alfresco-share:25.2.0
-    mem_limit: 2g
+    mem_limit: 1g
     environment:
       CSRF_FILTER_ORIGIN: http://localhost:8080
       CSRF_FILTER_REFERER: http://localhost:8080/share/.*
@@ -116,6 +118,8 @@ services:
       timeout: 2s
       retries: 3
       start_period: 15s
+    volumes:
+      - ../alf-tengine-ocr/docker/share/modules/jars/ocr-share-action-1.0.0.jar:/usr/local/tomcat/webapps/share/WEB-INF/lib/ocr-share-action-1.0.0.jar:ro
     # volumes:
     #   - ./branding/trustblocks-theme.css:/usr/local/tomcat/webapps/share/themes/trustblocks/yui/assets/skins/sam/trustblocks.css:ro
     #   - ./branding/messages_en.properties:/usr/local/tomcat/webapps/share/WEB-INF/classes/alfresco/messages/trustblocks-messages_en.properties:ro
@@ -149,7 +153,7 @@ services:
   #     start_period: 5s
   solr6:
     image: docker.io/alfresco/alfresco-search-services:2.0.16
-    mem_limit: 4g
+    mem_limit: 1g
     environment:
       # Solr needs to know how to register itself with Alfresco
       SOLR_ALFRESCO_HOST: "alfresco"
@@ -164,8 +168,8 @@ services:
       # SHARED SECRET VALUE
       JAVA_TOOL_OPTIONS: >-
         -Dalfresco.secureComms.secret=secret
-        -XX:MaxRAMPercentage=85
-        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=60
+        -XX:MinRAMPercentage=30
         -Dsolr.index.tracker.enableSharding=true
         -Dsolr.suggester.enabled=true
         -Dsolr.content.dir=/opt/alfresco-search-services/contentstore
@@ -178,7 +182,7 @@ services:
     ports:
       - "8083:8983" # Browser port
   activemq:
-    image: alfresco/alfresco-activemq:5.18-jre17-rockylinux8
+    image: apache/activemq-classic:5.18.3
     mem_limit: 1g
     ports:
       - "8161:8161" # Web Console
@@ -186,11 +190,27 @@ services:
       - "61616:61616" # OpenWire
       - "61613:61613" # STOMP
     healthcheck:
-      test: ["CMD", "/opt/activemq/bin/activemq", "query", "--objname", "type=Broker,brokerName=*,service=Health", "|", "grep", "Good"]
+      test: ["CMD", "netstat", "-l", "|", "grep", ":61616"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 5s
+      start_period: 15s
+  transform-ocr:
+    image: alfresco/tengine-ocr:latest
+    mem_limit: 1g
+    environment:
+      JAVA_OPTS: >-
+        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=80
+      OCRMYPDF_ARGUMENTS: "--skip-text"
+    ports:
+      - "8091:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/ready"]
+      interval: 20s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
   content-app:
     image: alfresco/alfresco-content-app:7.0.0
     mem_limit: 128m
@@ -235,3 +255,8 @@ volumes:
   #   driver: local
   solr_data:
     driver: local
+
+networks:
+  default:
+    external: true
+    name: trust-network

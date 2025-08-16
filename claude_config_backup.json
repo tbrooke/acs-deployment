@@ -1,0 +1,19 @@
+{
+  "globalShortcut": "Ctrl+Space",
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+       "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "python-alfresco-mcp-server": {
+      "command": "uv",
+      "args": ["run", "python-alfresco-mcp-server", "--transport", "stdio"],
+      "cwd": "/Users/tombrooke/Code/trust-server/alfresco/acs-deployment/python-alfresco-mcp-server",
+      "env": {
+        "ALFRESCO_URL": "http://localhost:8080",
+        "ALFRESCO_USERNAME": "admin", 
+        "ALFRESCO_PASSWORD": "admin"
+      }
+    }
+  }
+}
