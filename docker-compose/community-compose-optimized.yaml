@@ -1,0 +1,239 @@
+# This Docker Compose file will spin up an ACS community installation on a local host.
+# Optimized for Beelink SEi14 Mini PC (32GB DDR5, Intel Ultra 5 125H 14C/18T)
+# Total memory allocation: ~21GB for optimal production performance
+#
+# For performance tuning, increase each container mem_limit and give a percentage of
+# it to the JVM. Use either the -Xms,-Xmx flags or the newly added flags in
+# java 10+: -XX:MaxRAMPercentage and -XX:MinRAMPercentage.
+# More details here:
+# https://www.oracle.com/technetwork/java/javase/10-relnote-issues-4108729.html
+#
+services:
+  alfresco:
+    image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
+    mem_limit: 8g
+    cpus: '8'
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -Dencryption.keystore.type=JCEKS
+        -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+        -Dencryption.keyAlgorithm=DESede
+        -Dencryption.keystore.location=/usr/local/tomcat/shared/classes/alfresco/extension/keystore/keystore
+        -Dmetadata-keystore.password=mp6yc0UD9e
+        -Dmetadata-keystore.aliases=metadata
+        -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+        -Dmetadata-keystore.metadata.algorithm=DESede
+      JAVA_OPTS: >-
+        -Ddb.driver=org.postgresql.Driver
+        -Ddb.username=postgres
+        -Ddb.password=devpassword123
+        -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_dev
+        -Dsolr.host=solr6
+        -Dsolr.port=8983
+        -Dsolr.http.connection.timeout=1000
+        -Dsolr.secureComms=secret
+        -Dsolr.sharedSecret=secret
+        -Dsolr.base.url=/solr
+        -Dindex.subsystem.name=solr6
+        -Dshare.host=localhost
+        -Dshare.port=8080
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
+        -Dcsrf.filter.enabled=false
+        -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+        -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
+        -Ddeployment.method=DOCKER_COMPOSE
+        -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+        -DlocalTransform.ocr.url=http://transform-ocr:8090/
+        -Dcontent.store.dir=/usr/local/tomcat/alf_data/contentstore
+        -Dfile.content.store.fileContentUrlProvider.timeBasedPath=true
+        -Dfile.content.store.fileContentUrlProvider.buckets=256
+        -Dtransform.service.enabled=true
+        -Dlegacy.transform.service.enabled=false
+        -Dthumbnail.generate=true
+        -Dthumbnail.definition.default.mimetype=image/png
+        -Dcontent.metadataExtracter.default.timeoutMs=60000
+        -Dcontent.transformer.default.timeoutMs=300000
+        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=85
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:G1HeapRegionSize=16m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/alfresco/api/-default-/public/alfresco/versions/1/probes/-ready-"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+      start_period: 1m
+    volumes:
+      - alf_data:/usr/local/tomcat/alf_data
+      - alf_logs:/usr/local/tomcat/logs
+      - ../alf-tengine-ocr/docker/alfresco/modules/jars/embed-metadata-action-1.0.0.jar:/usr/local/tomcat/webapps/alfresco/WEB-INF/lib/embed-metadata-action-1.0.0.jar:ro
+    extends:
+      file: commons/base.yaml
+      service: alfresco
+  transform-core-aio:
+    image: alfresco/alfresco-transform-core-aio:5.2.0
+    mem_limit: 4g
+    cpus: '4'
+    environment:
+      JAVA_OPTS: >-
+        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=85
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+      ACTIVEMQ_URL: "nio://activemq:61616"
+      TRANSFORM_ENGINE_REQUEST_TIMEOUT: "300"
+      TRANSFORM_ENGINE_LIBREOFFICE_TIMEOUT: "300"
+      TRANSFORM_ENGINE_IMAGEMAGICK_TIMEOUT: "300"
+      TRANSFORM_ENGINE_PDF_RENDERER_TIMEOUT: "300"
+      TRANSFORM_ENGINE_TIKA_TIMEOUT: "300"
+      LIBREOFFICE_MAX_TASKS_PER_PROCESS: "50"
+      IMAGEMAGICK_MAX_TRANSFORMS: "100"
+      PDF_RENDERER_MAX_TRANSFORMS: "100"
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/ready"]
+      interval: 20s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      activemq:
+        condition: service_healthy
+  share:
+    image: docker.io/alfresco/alfresco-share:25.2.0
+    mem_limit: 2g
+    cpus: '2'
+    ports:
+      - "8081:8080"
+    environment:
+      CSRF_FILTER_ORIGIN: http://localhost:8080
+      CSRF_FILTER_REFERER: http://localhost:8080/share/.*
+      REPO_HOST: "alfresco"
+      REPO_PORT: "8080"
+      JAVA_OPTS: >-
+        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=85
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
+        -Dalfresco.context=alfresco
+        -Dalfresco.protocol=http
+        -Dshare.context=share
+        -Dapplication.title="TrustBlocks Document Management"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/share"]
+      interval: 20s
+      timeout: 2s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - ../alf-tengine-ocr/docker/share/modules/jars/ocr-share-action-1.0.0.jar:/usr/local/tomcat/webapps/share/WEB-INF/lib/ocr-share-action-1.0.0.jar:ro
+      - ../geo-views-2.5.0.jar:/usr/local/tomcat/shared/lib/geo-views-2.5.0.jar:ro
+    depends_on:
+      alfresco:
+        condition: service_healthy
+    extends:
+      file: commons/base.yaml
+      service: share
+  solr6:
+    image: docker.io/alfresco/alfresco-search-services:2.0.16
+    mem_limit: 6g
+    cpus: '4'
+    environment:
+      # Solr needs to know how to register itself with Alfresco
+      SOLR_ALFRESCO_HOST: "alfresco"
+      SOLR_ALFRESCO_PORT: "8080"
+      # Alfresco needs to know how to call solr
+      SOLR_SOLR_HOST: "solr6"
+      SOLR_SOLR_PORT: "8983"
+      # Create the default alfresco and archive cores
+      SOLR_CREATE_ALFRESCO_DEFAULTS: "alfresco,archive"
+      # HTTPS or SECRET
+      ALFRESCO_SECURE_COMMS: "secret"
+      # SHARED SECRET VALUE
+      JAVA_TOOL_OPTIONS: >-
+        -Dalfresco.secureComms.secret=secret
+        -XX:MaxRAMPercentage=80
+        -XX:MinRAMPercentage=50
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -Dsolr.index.tracker.enableSharding=true
+        -Dsolr.suggester.enabled=true
+        -Dsolr.content.dir=/opt/alfresco-search-services/contentstore
+        -Dsolr.model.dir=/opt/alfresco-search-services/solrhome/templates
+        -Dalfresco.index.transformContent=true
+        -Dalfresco.commitTimeUpperLimit=10000
+        -Dalfresco.lag=10000
+    volumes:
+      - solr_data:/opt/alfresco-search-services/solrhome
+    ports:
+      - "8083:8983" # Browser port
+  activemq:
+    image: apache/activemq-classic:5.18.3
+    mem_limit: 1g
+    cpus: '2'
+    ports:
+      - "8161:8161" # Web Console
+      - "5672:5672" # AMQP
+      - "61616:61616" # OpenWire
+      - "61613:61613" # STOMP
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f activemq || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+  transform-ocr:
+    image: alfresco/tengine-ocr:latest
+    mem_limit: 2g
+    cpus: '2'
+    environment:
+      JAVA_OPTS: >-
+        -XX:MinRAMPercentage=50
+        -XX:MaxRAMPercentage=80
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+      OCRMYPDF_ARGUMENTS: "--skip-text"
+    ports:
+      - "8091:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/ready"]
+      interval: 20s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
+  content-app:
+    image: alfresco/alfresco-content-app:7.0.0
+    mem_limit: 128m
+    environment:
+      APP_BASE_SHARE_URL: "http://localhost:8080/aca/#/preview/s"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 1s
+      retries: 3
+      start_period: 1s
+    extends:
+      file: commons/base.yaml
+      service: content-app
+  proxy:
+    extends:
+      file: commons/base.yaml
+      service: proxy
+
+volumes:
+  alf_data:
+    driver: local
+  alf_logs:
+    driver: local
+  solr_data:
+    driver: local
+
+networks:
+  default:
+    external: true
+    name: trust-network

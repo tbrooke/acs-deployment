@@ -1,0 +1,3 @@
+[submodule "alf-tengine-ocr"]
+	path = alf-tengine-ocr
+	url = git@github.com:tbrooke/alf-tengine-ocr.git
