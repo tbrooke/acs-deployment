@@ -1,0 +1,61 @@
+# This Docker Compose file will spin up an ACS community installation on a local host.
+# Optimized for Beelink SEi14 Mini PC (32GB DDR5, Intel Ultra 5 125H 14C/18T)
+# Total memory allocation: ~16GB (50% of available RAM for containers)
+#
+# For performance tuning, increase each container mem_limit and give a percentage of
+# it to the JVM. Use either the -Xms,-Xmx flags or the newly added flags in
+# java 10+: -XX:MaxRAMPercentage and -XX:MinRAMPercentage.
+# More details here:
+# https://www.oracle.com/technetwork/java/javase/10-relnote-issues-4108729.html
+#
+services:
+  alfresco:
+    image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
+    ports:
+      - "8080:8080"
+    mem_limit: 3g
+    environment:
+      JAVA_TOOL_OPTIONS: >-
+        -Dencryption.keystore.type=JCEKS
+        -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+        -Dencryption.keyAlgorithm=DESede
+        -Dencryption.keystore.location=/usr/local/tomcat/shared/classes/alfresco/extension/keystore/keystore
+        -Dmetadata-keystore.password=mp6yc0UD9e
+        -Dmetadata-keystore.aliases=metadata
+        -Dmetadata-keystore.metadata.password=oKIWzVdEdA
+        -Dmetadata-keystore.metadata.algorithm=DESede
+      JAVA_OPTS: >-
+        -Ddb.driver=org.postgresql.Driver
+        -Ddb.username=postgres
+        -Ddb.password=devpassword123
+        -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_dev
+        -Dsolr.host=solr6
+        -Dsolr.port=8983
+        -Dsolr.http.connection.timeout=1000
+        -Dsolr.secureComms=secret
+        -Dsolr.sharedSecret=secret
+        -Dsolr.base.url=/solr
+        -Dindex.subsystem.name=solr6
+        -Dshare.host=localhost
+        -Dshare.port=8080
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
+        -Dcsrf.filter.enabled=false
+        -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+        -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
+        -Ddeployment.method=DOCKER_COMPOSE
+        -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+volumes:
+  alf_data:
+    driver: local
+  alf_logs:
+    driver: local
+  # postgres_data:
+  #   driver: local
+  solr_data:
+    driver: local
+
+networks:
+  default:
+    external: true
+    name: trust-network
