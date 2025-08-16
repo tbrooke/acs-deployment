@@ -132,7 +132,7 @@ services:
       start_period: 15s
     volumes:
       - ../alf-tengine-ocr/docker/share/modules/jars/ocr-share-action-1.0.0.jar:/usr/local/tomcat/webapps/share/WEB-INF/lib/ocr-share-action-1.0.0.jar:ro
-      - ../geo-views-2.5.0.jar:/usr/local/tomcat/shared/lib/geo-views-2.5.0.jar:ro
+      - ../addons/geo-views-2.5.0.jar:/usr/local/tomcat/shared/lib/geo-views-2.5.0.jar:ro
     depends_on:
       alfresco:
         condition: service_healthy
