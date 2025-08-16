@@ -23,6 +23,7 @@ target
 
 # Package Files
 *.jar
+!addons/*.jar
 *.war
 *.ear
 
