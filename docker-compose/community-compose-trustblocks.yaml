@@ -83,6 +83,8 @@ services:
       service: share
     networks:
     - trust-network
+    ports:
+    - 8081:8080
   solr6:
     image: docker.io/alfresco/alfresco-search-services:2.0.16
     mem_limit: 2g
