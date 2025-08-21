@@ -3,27 +3,16 @@ services:
     image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
     mem_limit: 1900m
     environment:
-      JAVA_TOOL_OPTIONS: '-Dencryption.keystore.type=JCEKS
-
-        -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
-
-        -Dencryption.keyAlgorithm=DESede
-
-        -Dencryption.keystore.location=/usr/local/tomcat/shared/classes/alfresco/extension/keystore/keystore
-
-        -Dmetadata-keystore.password=mp6yc0UD9e
-
-        -Dmetadata-keystore.aliases=metadata
-
-        -Dmetadata-keystore.metadata.password=oKIWzVdEdA
-
-        -Dmetadata-keystore.metadata.algorithm=DESede'
+      JAVA_TOOL_OPTIONS: -Dencryption.keystore.type=JCEKS -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
+        -Dencryption.keyAlgorithm=DESede -Dencryption.keystore.location=/usr/local/tomcat/shared/classes/alfresco/extension/keystore/keystore
+        -Dmetadata-keystore.password=mp6yc0UD9e -Dmetadata-keystore.aliases=metadata
+        -Dmetadata-keystore.metadata.password=oKIWzVdEdA -Dmetadata-keystore.metadata.algorithm=DESede
       JAVA_OPTS: -Ddb.driver=org.postgresql.Driver -Ddb.username=postgres -Ddb.password=devpassword123
         -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_prod
         -Dsolr.host=solr6 -Dsolr.port=8983 -Dsolr.http.connection.timeout=1000 -Dsolr.secureComms=secret
         -Dsolr.sharedSecret=secret -Dsolr.base.url=/solr -Dindex.subsystem.name=solr6
-        -Dshare.host=localhost -Dshare.port=8080 -Dalfresco.host=localhost -Dalfresco.port=8080
-        -Dcsrf.filter.enabled=false -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+        -Dshare.host=trustblocks.com -Dshare.port=8080 -Dalfresco.host=trustblocks.com
+        -Dalfresco.port=8080 -Dcsrf.filter.enabled=false -Daos.baseUrlOverwrite=http://trustblocks.com/alfresco/aos
         -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
         -Ddeployment.method=DOCKER_COMPOSE -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
         -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=80
@@ -38,7 +27,10 @@ services:
       retries: 5
       start_period: 1m
     volumes:
-    - alf_data:/usr/local/tomcat/alf_data
+    - /usr/local/tomcat/alf_data
+    extends:
+      file: commons/base.yaml
+      service: alfresco
     networks:
     - trust-network
     ports:
@@ -73,7 +65,7 @@ services:
       CSRF_FILTER_REFERER: http://localhost:8080/share/.*
       REPO_HOST: alfresco
       REPO_PORT: '8080'
-      JAVA_OPTS: -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=80 -Dalfresco.host=localhost
+      JAVA_OPTS: -XX:MinRAMPercentage=50 -XX:MaxRAMPercentage=80 -Dalfresco.host=trustblocks.com
         -Dalfresco.port=8080 -Dalfresco.context=alfresco -Dalfresco.protocol=http
     healthcheck:
       test:
@@ -87,7 +79,10 @@ services:
       start_period: 15s
     depends_on:
       alfresco:
-        condition: service_started
+        condition: service_healthy
+    extends:
+      file: commons/base.yaml
+      service: share
     networks:
     - trust-network
     ports:
@@ -146,6 +141,9 @@ services:
       timeout: 1s
       retries: 3
       start_period: 1s
+    extends:
+      file: commons/base.yaml
+      service: content-app
     networks:
     - trust-network
   control-center:
@@ -165,12 +163,18 @@ services:
       timeout: 1s
       retries: 3
       start_period: 1s
+    extends:
+      file: commons/base.yaml
+      service: control-center
+    networks:
+    - trust-network
+  proxy:
+    extends:
+      file: commons/base.yaml
+      service: proxy
     networks:
     - trust-network
 networks:
   trust-network:
     external: true
     name: trust-network
-volumes:
-  alf_data:
-    driver: local
