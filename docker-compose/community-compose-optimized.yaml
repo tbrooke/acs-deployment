@@ -27,7 +27,7 @@ services:
         -Ddb.driver=org.postgresql.Driver
         -Ddb.username=postgres
         -Ddb.password=devpassword123
-        -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_dev
+        -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_prod
         -Dsolr.host=solr6
         -Dsolr.port=8983
         -Dsolr.http.connection.timeout=1000
@@ -68,7 +68,7 @@ services:
     volumes:
       - alf_data:/usr/local/tomcat/alf_data
       - alf_logs:/usr/local/tomcat/logs
-      - ../alf-tengine-ocr/docker/alfresco/modules/jars/embed-metadata-action-1.0.0.jar:/usr/local/tomcat/webapps/alfresco/WEB-INF/lib/embed-metadata-action-1.0.0.jar:ro
+      - ../alf-tengine-ocr/embed-metadata-action/target/embed-metadata-action-1.0.1.amp:/usr/local/tomcat/modules/platform/embed-metadata-action-1.0.1.amp:ro
     extends:
       file: commons/base.yaml
       service: alfresco
@@ -133,6 +133,7 @@ services:
     volumes:
       - ../alf-tengine-ocr/docker/share/modules/jars/ocr-share-action-1.0.0.jar:/usr/local/tomcat/webapps/share/WEB-INF/lib/ocr-share-action-1.0.0.jar:ro
       - ../addons/geo-views-2.5.0.jar:/usr/local/tomcat/shared/lib/geo-views-2.5.0.jar:ro
+      - ../addons/geo-views-2.5.0.jar:/usr/local/tomcat/webapps/share/WEB-INF/lib/geo-views-2.5.0.jar:ro
     depends_on:
       alfresco:
         condition: service_healthy
@@ -182,11 +183,11 @@ services:
       - "61616:61616" # OpenWire
       - "61613:61613" # STOMP
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f activemq || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+      test: ["CMD-SHELL", "curl -f -u admin:admin http://localhost:8161/api/jolokia/read/org.apache.activemq:type=Broker,brokerName=localhost/BrokerName 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
   transform-ocr:
     image: alfresco/tengine-ocr:latest
     mem_limit: 2g
@@ -201,11 +202,11 @@ services:
     ports:
       - "8091:8090"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/ready"]
-      interval: 20s
-      timeout: 2s
+      test: ["CMD-SHELL", "timeout 2 bash -c 'cat < /dev/null > /dev/tcp/localhost/8090' || exit 1"]
+      interval: 30s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 45s
   content-app:
     image: alfresco/alfresco-content-app:7.0.0
     mem_limit: 128m

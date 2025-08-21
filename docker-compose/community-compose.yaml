@@ -19,7 +19,7 @@
           -Ddb.driver=org.postgresql.Driver
           -Ddb.username=postgres
           -Ddb.password=devpassword123
-          -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_dev
+          -Ddb.url=jdbc:postgresql://trust-server-postgres-local:5432/alfresco_prod
           -Dsolr.host=solr6
           -Dsolr.port=8983
           -Dsolr.http.connection.timeout=1000
@@ -27,10 +27,10 @@
           -Dsolr.sharedSecret=secret
           -Dsolr.base.url=/solr
           -Dindex.subsystem.name=solr6
-          -Dshare.host=localhost
-          -Dshare.port=8080
-          -Dalfresco.host=localhost
-          -Dalfresco.port=8080
+          -Dshare.host=trustblocks.com
+          -Dshare.port=80
+          -Dalfresco.host=trustblocks.com
+          -Dalfresco.port=80
           -Dcsrf.filter.enabled=false
           -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
           -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
