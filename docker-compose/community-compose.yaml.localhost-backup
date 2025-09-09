@@ -33,12 +33,12 @@ services:
         -Dsolr.sharedSecret=secret
         -Dsolr.base.url=/solr
         -Dindex.subsystem.name=solr6
-        -Dshare.host=admin.mtzcg.com
-        -Dshare.port=80
-        -Dalfresco.host=admin.mtzcg.com
-        -Dalfresco.port=80
+        -Dshare.host=localhost
+        -Dshare.port=8080
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
         -Dcsrf.filter.enabled=false
-        -Daos.baseUrlOverwrite=http://admin.mtzcg.com/alfresco/aos
+        -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
         -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
         -Ddeployment.method=DOCKER_COMPOSE
         -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
@@ -77,15 +77,15 @@ services:
     image: docker.io/alfresco/alfresco-share:25.2.0
     mem_limit: 1g
     environment:
-      CSRF_FILTER_ORIGIN: http://admin.mtzcg.com
-      CSRF_FILTER_REFERER: http://admin.mtzcg.com/share/.*
+      CSRF_FILTER_ORIGIN: http://localhost:8080
+      CSRF_FILTER_REFERER: http://localhost:8080/share/.*
       REPO_HOST: "alfresco"
       REPO_PORT: "8080"
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
         -XX:MaxRAMPercentage=80
-        -Dalfresco.host=admin.mtzcg.com
-        -Dalfresco.port=80
+        -Dalfresco.host=localhost
+        -Dalfresco.port=8080
         -Dalfresco.context=alfresco
         -Dalfresco.protocol=http
     healthcheck:
@@ -153,7 +153,7 @@ services:
     image: alfresco/alfresco-content-app:7.1.0
     mem_limit: 128m
     environment:
-      APP_BASE_SHARE_URL: "http://admin.mtzcg.com/aca/#/preview/s"
+      APP_BASE_SHARE_URL: "http://localhost:8080/aca/#/preview/s"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 10s
