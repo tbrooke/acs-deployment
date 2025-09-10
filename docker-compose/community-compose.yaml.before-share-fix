@@ -30,6 +30,7 @@ services:
         -Dsolr.port=8983
         -Dsolr.http.connection.timeout=1000
         -Dsolr.secureComms=secret
+        -DlocalTransform.ocr.url=http://transform-ocr:8090/
         -Dsolr.sharedSecret=secret
         -Dsolr.base.url=/solr
         -Dindex.subsystem.name=solr6
@@ -41,8 +42,11 @@ services:
         -Daos.baseUrlOverwrite=http://admin.mtzcg.com/alfresco/aos
         -Dmessaging.broker.url="failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true"
         -Ddeployment.method=DOCKER_COMPOSE
+        -DlocalTransform.ocr.url=http://transform-ocr:8090/
         -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+        -DlocalTransform.ocr.url=http://transform-ocr:8090/
         -XX:MinRAMPercentage=50
+        -Dhttpclient.config.transform.socketTimeout=500000 -Dhttpclient.config.transform.connectionRequestTimeout=500000 -Dhttpclient.config.transform.connectionTimeout=500000
         -XX:MaxRAMPercentage=80
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/alfresco/api/-default-/public/alfresco/versions/1/probes/-ready-"]
@@ -52,6 +56,7 @@ services:
       start_period: 1m
     volumes:
       - /usr/local/tomcat/alf_data
+      - ./modules/jar:/usr/local/tomcat/webapps/alfresco/WEB-INF/lib:ro
     extends:
       file: commons/base.yaml
       service: alfresco
@@ -61,6 +66,7 @@ services:
     environment:
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
+        -Dhttpclient.config.transform.socketTimeout=500000 -Dhttpclient.config.transform.connectionRequestTimeout=500000 -Dhttpclient.config.transform.connectionTimeout=500000
         -XX:MaxRAMPercentage=80
     ports:
       - "8090:8090"
@@ -83,6 +89,7 @@ services:
       REPO_PORT: "8080"
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
+        -Dhttpclient.config.transform.socketTimeout=500000 -Dhttpclient.config.transform.connectionRequestTimeout=500000 -Dhttpclient.config.transform.connectionTimeout=500000
         -XX:MaxRAMPercentage=80
         -Dalfresco.host=admin.mtzcg.com
         -Dalfresco.port=80
@@ -94,12 +101,16 @@ services:
       timeout: 2s
       retries: 3
       start_period: 15s
+    volumes:
+      - ./share-modules/jar:/usr/local/tomcat/webapps/share/WEB-INF/lib:ro
     depends_on:
       alfresco:
         condition: service_healthy
     extends:
       file: commons/base.yaml
       service: share
+    volumes:
+      - ./share-modules/jar:/usr/local/tomcat/webapps/share/WEB-INF/lib:ro
   postgres:
     image: postgres:16.5
     mem_limit: 512m
@@ -183,3 +194,22 @@ services:
     extends:
       file: commons/base.yaml
       service: proxy
+  transform-ocr:
+    image: angelborroy/alfresco-tengine-ocr:1.0.0
+    mem_limit: 1536m
+    environment:
+      JAVA_OPTS: >-
+        -XX:MinRAMPercentage=50
+        -Dhttpclient.config.transform.socketTimeout=500000 -Dhttpclient.config.transform.connectionRequestTimeout=500000 -Dhttpclient.config.transform.connectionTimeout=500000
+        -XX:MaxRAMPercentage=80
+    ports:
+      - "8091:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/ready"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      activemq:
+        condition: service_healthy

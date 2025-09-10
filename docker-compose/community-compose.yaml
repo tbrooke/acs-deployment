@@ -10,7 +10,7 @@
 services:
   alfresco:
     image: docker.io/alfresco/alfresco-content-repository-community:25.2.0
-    mem_limit: 1900m
+    mem_limit: 8g
     environment:
       JAVA_TOOL_OPTIONS: >-
         -Dencryption.keystore.type=JCEKS
@@ -57,7 +57,7 @@ services:
       service: alfresco
   transform-core-aio:
     image: alfresco/alfresco-transform-core-aio:5.2.1
-    mem_limit: 1536m
+    mem_limit: 3g
     environment:
       JAVA_OPTS: >-
         -XX:MinRAMPercentage=50
@@ -75,7 +75,7 @@ services:
         condition: service_healthy
   share:
     image: docker.io/alfresco/alfresco-share:25.2.0
-    mem_limit: 1g
+    mem_limit: 2g
     environment:
       CSRF_FILTER_ORIGIN: http://admin.mtzcg.com
       CSRF_FILTER_REFERER: http://admin.mtzcg.com/share/.*
@@ -102,7 +102,7 @@ services:
       service: share
   postgres:
     image: postgres:16.5
-    mem_limit: 512m
+    mem_limit: 1g
     environment:
       - POSTGRES_PASSWORD=alfresco
       - POSTGRES_USER=alfresco
@@ -118,7 +118,7 @@ services:
       start_period: 5s
   solr6:
     image: docker.io/alfresco/alfresco-search-services:2.0.16
-    mem_limit: 2g
+    mem_limit: 6g
     environment:
       # Solr needs to know how to register itself with Alfresco
       SOLR_ALFRESCO_HOST: "alfresco"
